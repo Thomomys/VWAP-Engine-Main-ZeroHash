@@ -5,8 +5,6 @@ import (
 	"errors"
 	"math"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 var (
@@ -49,7 +47,7 @@ func init() {
 		{Id: 30, Volume: "0.00005285", Price: "3784.39", TradeSymbol: "ETH-USD", ProviderName: "mock", Currency: "USD"},
 		{Id: 31, Volume: "0.0715337", Price: "69897.48", TradeSymbol: "BTC-USD", ProviderName: "mock", Currency: "USD"},
 		{Id: 32, Volume: "0..0715337", Price: "69897.48", TradeSymbol: "BTC-USD", ProviderName: "mock", Currency: "USD"},
-		//{Id: 32, Volume: "0.0715337", Price: "69897.48", TradeSymbol: "BTC-USD", ProviderName: "error", Currency: "USD"},
+		{Id: 33, Volume: "0.0715337", Price: "69897.48", TradeSymbol: "BTC-USD", ProviderName: "error", Currency: "USD"},
 	}
 
 	AllTrades = fakeTrades
@@ -86,9 +84,15 @@ func TestVWAPComputer_Listen(t *testing.T) {
 			engine := NewComputerVWAP(tt.wantWindowSize)
 			engine.Listen(stopCtx, cancel, tt.args.wsf)
 
-			assert.Equal(t, 10, engine.windowSize)
-			assert.Equal(t, 0, len(engine.trades["BTC-USD"]))
-			assert.Equal(t, 1, len(engine.trades["ETH-USD"]))
+			gotWindowSize := engine.windowSize
+			gotConsumedNumber := engine.consumedNumber
+
+			if gotWindowSize != tt.wantWindowSize {
+				t.Errorf("VwapComputer.Linsten() produces windowSize = %v, want %v", gotWindowSize, tt.wantWindowSize)
+			}
+			if gotConsumedNumber != tt.wantConsumedNumber {
+				t.Errorf("VwapComputer.Linsten() produces consumedNumber = %v, want %v", gotConsumedNumber, tt.wantConsumedNumber)
+			}
 		})
 	}
 }
