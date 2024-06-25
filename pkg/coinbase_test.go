@@ -27,11 +27,11 @@ func TestNewCoinbaseFeed(t *testing.T) {
 				debug: false,
 				conf: &CoinbaseConfig{
 					ProviderName:    "coinbase.com",
-					Endpoint:        "wss://test-fake-feed",
+					Endpoint:        "wss://ws-feed.exchange.coinbase.com",
 					Currency:        "USD",
 					NumberAsStr:     true,
 					Pairs:           []string{"BTC-USD", "ETH-USD", "ETH-BTC"},
-					SubRetries:      10,
+					SubRetries:      30,
 					SubChannelName:  "matches",
 					SubResponseType: "subscriptions",
 				},

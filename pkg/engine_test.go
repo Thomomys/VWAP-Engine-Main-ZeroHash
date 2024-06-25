@@ -3,6 +3,7 @@ package pkg
 import (
 	"context"
 	"errors"
+	"math"
 	"testing"
 )
 
@@ -46,11 +47,12 @@ func init() {
 		{Id: 30, Volume: "0.00005285", Price: "3784.39", TradeSymbol: "ETH-USD", ProviderName: "mock", Currency: "USD"},
 		{Id: 31, Volume: "0.0715337", Price: "69897.48", TradeSymbol: "BTC-USD", ProviderName: "mock", Currency: "USD"},
 		{Id: 32, Volume: "0..0715337", Price: "69897.48", TradeSymbol: "BTC-USD", ProviderName: "mock", Currency: "USD"},
-		//{Id: 32, Volume: "0.0715337", Price: "69897.48", TradeSymbol: "BTC-USD", ProviderName: "error", Currency: "USD"},
+		{Id: 33, Volume: "0.0715337", Price: "69897.48", TradeSymbol: "BTC-USD", ProviderName: "error", Currency: "USD"},
 	}
 
 	AllTrades = fakeTrades
-	// TODO: Populate EthUSDTrades and BtcUSDTrades
+	EthUSDTrades = fakeTrades
+	BtcUSDTrades = fakeTrades
 }
 
 func TestVWAPComputer_Listen(t *testing.T) {
@@ -82,7 +84,15 @@ func TestVWAPComputer_Listen(t *testing.T) {
 			engine := NewComputerVWAP(tt.wantWindowSize)
 			engine.Listen(stopCtx, cancel, tt.args.wsf)
 
-			// TODO: implement me; assert the number of trades consumed and the window size
+			gotWindowSize := engine.windowSize
+			gotConsumedNumber := engine.consumedNumber
+
+			if gotWindowSize != tt.wantWindowSize {
+				t.Errorf("VwapComputer.Linsten() produces windowSize = %v, want %v", gotWindowSize, tt.wantWindowSize)
+			}
+			if gotConsumedNumber != tt.wantConsumedNumber {
+				t.Errorf("VwapComputer.Linsten() produces consumedNumber = %v, want %v", gotConsumedNumber, tt.wantConsumedNumber)
+			}
 		})
 	}
 }
@@ -109,7 +119,7 @@ func TestVWAPComputer_Engine(t *testing.T) {
 			args:   args{symbol: "BTC-USD"},
 			trades: BtcUSDTrades,
 			fields: fields{
-				wantVWAP:             66157.70506683017,
+				wantVWAP:             66157.7050668302,
 				wantSumVolume:        0.15922377,
 				wantPriceTimesVolume: 10533.8792152888,
 				wantWindowSize:       15,
@@ -121,8 +131,8 @@ func TestVWAPComputer_Engine(t *testing.T) {
 			args:   args{symbol: "ETH-USD"},
 			trades: EthUSDTrades,
 			fields: fields{
-				wantVWAP:             3801.143769859362,
-				wantSumVolume:        20.303086179999998,
+				wantVWAP:             3801.1437698594,
+				wantSumVolume:        20.30308618000,
 				wantPriceTimesVolume: 77174.9495420247,
 				wantWindowSize:       15,
 				wantErr:              false,
@@ -133,9 +143,9 @@ func TestVWAPComputer_Engine(t *testing.T) {
 			args:   args{symbol: "ETH-USD"},
 			trades: EthUSDTrades,
 			fields: fields{
-				wantVWAP:             3801.1864264633355,
-				wantSumVolume:        14.915106020000003,
-				wantPriceTimesVolume: 56695.09855248559,
+				wantVWAP:             3801.1864264633,
+				wantSumVolume:        14.9151060200,
+				wantPriceTimesVolume: 56695.0985524856,
 				wantWindowSize:       5,
 				wantErr:              false,
 			},
@@ -149,9 +159,9 @@ func TestVWAPComputer_Engine(t *testing.T) {
 				v.Compute(&trade)
 			}
 
-			gotPriceTimesVolume := v.priceTimesSize[tt.args.symbol]
-			gotSumVolume := v.sumVolume[tt.args.symbol]
-			gotVWAP := v.vWAP[tt.args.symbol]
+			gotPriceTimesVolume := Round10(v.priceTimesSize[tt.args.symbol])
+			gotSumVolume := Round10(v.sumVolume[tt.args.symbol])
+			gotVWAP := Round10(v.vWAP[tt.args.symbol])
 			gotCount := len(v.trades[tt.args.symbol])
 
 			if gotPriceTimesVolume != tt.fields.wantPriceTimesVolume {
@@ -190,4 +200,8 @@ func (c *CoinbaseMock) Read() (*Trade, error) {
 		return nil, errors.New("unexpected websocket error")
 	}
 	return &op, nil
+}
+
+func Round10(value float64) float64 {
+	return math.RoundToEven(value*10000000000) / 10000000000
 }
