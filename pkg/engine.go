@@ -35,41 +35,26 @@ func (v *ComputerVWAP) Listen(ctx context.Context, cancelFunc context.CancelFunc
 	defer wsf.TurnOff()
 
 	dst := make(chan *Trade)
-	defer close(dst)
 
 	go func() {
-		//Consume the socket
-		trade, err := wsf.Read()
-		if err != nil {
-			return
-		}
-
 		for {
 			select {
 			case <-ctx.Done():
-				dst <- nil
+				close(dst)
 				return
-			case dst <- trade:
+			default:
 				//Consume the socket
-				trade, err = wsf.Read()
+				trade, err := wsf.Read()
 				if err != nil {
+					close(dst)
 					return
 				}
+				dst <- trade
 			}
 		}
 	}()
 
-	count := 0
-
 	for trade := range dst {
-		if trade == nil {
-			return
-		}
-
-		if count == 10 {
-			cancelFunc()
-		}
-		count++
 
 		// single compute example
 		v.Compute(trade)
