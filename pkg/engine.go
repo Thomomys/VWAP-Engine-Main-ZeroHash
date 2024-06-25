@@ -26,20 +26,50 @@ type ComputerVWAP struct {
 	consumedNumber int
 }
 
-func (v *ComputerVWAP) Listen(_ctx context.Context, _cancelFunc context.CancelFunc, wsf WebSocketFeed) {
+func (v *ComputerVWAP) Listen(ctx context.Context, cancelFunc context.CancelFunc, wsf WebSocketFeed) {
 
 	// Subscribe to socket
 	if err := wsf.Subscribe(); err != nil {
 		return
 	}
+	defer wsf.TurnOff()
 
-	for {
+	dst := make(chan *Trade)
+	defer close(dst)
+
+	go func() {
 		//Consume the socket
 		trade, err := wsf.Read()
 		if err != nil {
 			return
-			// log.Fatal(err)
 		}
+
+		for {
+			select {
+			case <-ctx.Done():
+				dst <- nil
+				return
+			case dst <- trade:
+				//Consume the socket
+				trade, err = wsf.Read()
+				if err != nil {
+					return
+				}
+			}
+		}
+	}()
+
+	count := 0
+
+	for trade := range dst {
+		if trade == nil {
+			return
+		}
+
+		if count == 10 {
+			cancelFunc()
+		}
+		count++
 
 		// single compute example
 		v.Compute(trade)
