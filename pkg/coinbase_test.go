@@ -4,6 +4,8 @@ import (
 	"errors"
 	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNewCoinbaseFeed(t *testing.T) {
@@ -27,11 +29,11 @@ func TestNewCoinbaseFeed(t *testing.T) {
 				debug: false,
 				conf: &CoinbaseConfig{
 					ProviderName:    "coinbase.com",
-					Endpoint:        "wss://test-fake-feed",
+					Endpoint:        "wss://ws-feed.exchange.coinbase.com",
 					Currency:        "USD",
 					NumberAsStr:     true,
 					Pairs:           []string{"BTC-USD", "ETH-USD", "ETH-BTC"},
-					SubRetries:      10,
+					SubRetries:      30,
 					SubChannelName:  "matches",
 					SubResponseType: "subscriptions",
 				},
@@ -40,7 +42,8 @@ func TestNewCoinbaseFeed(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := NewCoinbaseFeed(tt.args.ws, tt.args.debug); !reflect.DeepEqual(got, tt.want) {
+			got := NewCoinbaseFeed(tt.args.ws, tt.args.debug)
+			if !assert.Equal(t, tt.want, got) {
 				t.Errorf("NewCoinbaseFeed() = %v, want %v", got, tt.want)
 			}
 		})

@@ -3,7 +3,10 @@ package pkg
 import (
 	"context"
 	"errors"
+	"math"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 var (
@@ -50,7 +53,8 @@ func init() {
 	}
 
 	AllTrades = fakeTrades
-	// TODO: Populate EthUSDTrades and BtcUSDTrades
+	EthUSDTrades = fakeTrades
+	BtcUSDTrades = fakeTrades
 }
 
 func TestVWAPComputer_Listen(t *testing.T) {
@@ -82,7 +86,9 @@ func TestVWAPComputer_Listen(t *testing.T) {
 			engine := NewComputerVWAP(tt.wantWindowSize)
 			engine.Listen(stopCtx, cancel, tt.args.wsf)
 
-			// TODO: implement me; assert the number of trades consumed and the window size
+			assert.Equal(t, 10, engine.windowSize)
+			assert.Equal(t, 0, len(engine.trades["BTC-USD"]))
+			assert.Equal(t, 1, len(engine.trades["ETH-USD"]))
 		})
 	}
 }
@@ -109,7 +115,7 @@ func TestVWAPComputer_Engine(t *testing.T) {
 			args:   args{symbol: "BTC-USD"},
 			trades: BtcUSDTrades,
 			fields: fields{
-				wantVWAP:             66157.70506683017,
+				wantVWAP:             66157.7050668302,
 				wantSumVolume:        0.15922377,
 				wantPriceTimesVolume: 10533.8792152888,
 				wantWindowSize:       15,
@@ -121,8 +127,8 @@ func TestVWAPComputer_Engine(t *testing.T) {
 			args:   args{symbol: "ETH-USD"},
 			trades: EthUSDTrades,
 			fields: fields{
-				wantVWAP:             3801.143769859362,
-				wantSumVolume:        20.303086179999998,
+				wantVWAP:             3801.1437698594,
+				wantSumVolume:        20.30308618000,
 				wantPriceTimesVolume: 77174.9495420247,
 				wantWindowSize:       15,
 				wantErr:              false,
@@ -133,9 +139,9 @@ func TestVWAPComputer_Engine(t *testing.T) {
 			args:   args{symbol: "ETH-USD"},
 			trades: EthUSDTrades,
 			fields: fields{
-				wantVWAP:             3801.1864264633355,
-				wantSumVolume:        14.915106020000003,
-				wantPriceTimesVolume: 56695.09855248559,
+				wantVWAP:             3801.1864264633,
+				wantSumVolume:        14.9151060200,
+				wantPriceTimesVolume: 56695.0985524856,
 				wantWindowSize:       5,
 				wantErr:              false,
 			},
@@ -149,9 +155,9 @@ func TestVWAPComputer_Engine(t *testing.T) {
 				v.Compute(&trade)
 			}
 
-			gotPriceTimesVolume := v.priceTimesSize[tt.args.symbol]
-			gotSumVolume := v.sumVolume[tt.args.symbol]
-			gotVWAP := v.vWAP[tt.args.symbol]
+			gotPriceTimesVolume := Round10(v.priceTimesSize[tt.args.symbol])
+			gotSumVolume := Round10(v.sumVolume[tt.args.symbol])
+			gotVWAP := Round10(v.vWAP[tt.args.symbol])
 			gotCount := len(v.trades[tt.args.symbol])
 
 			if gotPriceTimesVolume != tt.fields.wantPriceTimesVolume {
@@ -190,4 +196,8 @@ func (c *CoinbaseMock) Read() (*Trade, error) {
 		return nil, errors.New("unexpected websocket error")
 	}
 	return &op, nil
+}
+
+func Round10(value float64) float64 {
+	return math.RoundToEven(value*10000000000) / 10000000000
 }
