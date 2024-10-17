@@ -1,4 +1,4 @@
-# Software Engineer - Code Evaluation
+# VWAP Web Socket
 The goal here is evaluate this code project of VWAP (volume-weighted average price) engine. We are using coinbase websocket feed to stream trade executions and update the VWAP for each trading pair as updates become available.
 
 # Problem Specification:
